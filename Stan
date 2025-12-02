@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>乒乓球隊管理系統</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* CSS變數定義 - 用戶可自定義部分 */
+        :root {
+            /* 顏色主題 */
+            --primary-bg: #FFF9C4; /* 淺黃色背景 */
+            --text-color: #2E7D32; /* 深綠色文字 */
+            --admin-color: #4285F4; /* 行政功能 - 藍色 */
+            --teaching-color: #EA4335; /* 教學功能 - 紅色 */
+            --attendance-color: #FBBC05; /* 出席相關 - 黃色 */
+            --other-color: #34A853; /* 其他功能 - 綠色 */
+            --announcement-color: #FF9800; /* 公告 - 橙色 */
+            --contact-color: #9C27B0; /* 聯絡 - 紫色 */
+            
+            /* 佈局參數 */
+            --header-height: 100px;
+            --header-height-mobile: 90px;
+            --footer-height: 70px;
+            --grid-gap: 12px;
+            --button-min-height: 110px;
+            
+            /* 其他變數 */
+            --transition-speed: 0.3s;
+            --shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            --border-radius: 12px;
+            --content-padding: 20px;
+        }
+        
+        /* 基礎樣式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+            padding-bottom: var(--footer-height);
+            min-height: 100vh;
+        }
+        
+        /* 頂部標題欄 */
+        header {
+            background-color: var(--primary-bg);
+            height: var(--header-height);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 var(--content-padding);
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            border-bottom: 2px solid rgba(46, 125, 50, 0.1);
+        }
+        
+        .logo-container {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .main-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            font-size: 1rem;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+        
+        .language-toggle {
+            background-color: rgba(46, 125, 50, 0.1);
+            border: 2px solid var(--text-color);
+            color: var(--text-color);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .language-toggle:hover {
+            background-color: rgba(46, 125, 50, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        /* 內容區域 */
+        .content-container {
+            margin-top: var(--header-height);
+            padding: var(--content-padding);
+            min-height: calc(100vh - var(--header-height) - var(--footer-height));
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* 背景圖片 */
+        .background-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://images.unsplash.com/photo-1519690889869-e705e59f72e1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.15;
+            z-index: -1;
+        }
+        
+        .background-image::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 249, 196, 0.7); /* 疊加透明層確保文字可讀性 */
+        }
+        
+        /* 頁面切換 */
+        .pages-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        .page {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: transform var(--transition-speed), opacity var(--transition-speed);
+            overflow-y: auto;
+            max-height: calc(100vh - var(--header-height) - var(--footer-height) - 40px);
+        }
+        
+        .page.active {
+            opacity: 1;
+            transform: translateX(0);
+            position: relative;
+        }
+        
+        .page-title {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid;
+        }
+        
+        /* 公告欄頁面 */
+        #announcements .page-title {
+            border-color: var(--announcement-color);
+        }
+        
+        .announcement-content {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            border-left: 6px solid var(--announcement-color);
+        }
+        
+        .announcement-placeholder {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(46, 125, 50, 0.7);
+            font-size: 1.2rem;
+        }
+        
+        /* 行政支援頁面 */
+        #admin .page-title {
+            border-color: var(--admin-color);
+        }
+        
+        /* 教學支援頁面 */
+        #teaching .page-title {
+            border-color: var(--teaching-color);
+        }
+        
+        /* 聯絡我們頁面 */
+        #contact .page-title {
+            border-color: var(--contact-color);
+        }
+        
+        .contact-card {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            border-left: 6px solid var(--contact-color);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(46, 125, 50, 0.1);
+        }
+        
+        .contact-item:last-child {
+            border-bottom: none;
+        }
+        
+        .contact-icon {
+            background-color: rgba(156, 39, 176, 0.1);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            color: var(--contact-color);
+        }
+        
+        .contact-details h3 {
+            margin-bottom: 5px;
+            font-size: 1.1rem;
+        }
+        
+        /* 功能按鈕網格 */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: var(--grid-gap);
+            margin-top: 20px;
+        }
+        
+        .function-button {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            min-height: var(--button-min-height);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            box-shadow: var(--shadow);
+            transition: all var(--transition-speed);
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            border: 2px solid transparent;
+        }
+        
+        .function-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+        
+        .button-icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+        }
+        
+        .button-title {
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+        }
+        
+        .button-description {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        /* 按鈕顏色分類 */
+        .admin-button {
+            border-color: var(--admin-color);
+            color: var(--admin-color);
+        }
+        
+        .teaching-button {
+            border-color: var(--teaching-color);
+            color: var(--teaching-color);
+        }
+        
+        .attendance-button {
+            border-color: var(--attendance-color);
+            color: var(--attendance-color);
+        }
+        
+        .other-button {
+            border-color: var(--other-color);
+            color: var(--other-color);
+        }
+        
+        .announcement-button {
+            border-color: var(--announcement-color);
+            color: var(--announcement-color);
+        }
+        
+        .contact-button {
+            border-color: var(--contact-color);
+            color: var(--contact-color);
+        }
+        
+        /* 底部導航欄 */
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: var(--footer-height);
+            background-color: var(--primary-bg);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            border-top: 2px solid rgba(46, 125, 50, 0.1); /* 邊框強化視覺分離 */
+        }
+        
+        .nav-button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 12px;
+            border-radius: 10px;
+            transition: all var(--transition-speed);
+            cursor: pointer;
+            flex: 1;
+            max-width: 120px;
+            height: 100%;
+            color: var(--text-color);
+            opacity: 0.7;
+        }
+        
+        .nav-button.active {
+            opacity: 1;
+            background-color: rgba(46, 125, 50, 0.1);
+            color: var(--text-color);
+        }
+        
+        .nav-button.active .nav-icon {
+            transform: scale(1.1);
+        }
+        
+        .nav-icon {
+            font-size: 1.4rem;
+            margin-bottom: 4px;
+            transition: transform var(--transition-speed);
+        }
+        
+        .nav-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        /* 響應式設計 */
+        @media (max-width: 400px) {
+            :root {
+                --header-height: var(--header-height-mobile);
+                --content-padding: 15px;
+            }
+            
+            .main-title {
+                font-size: 1.5rem;
+            }
+            
+            .subtitle {
+                font-size: 0.9rem;
+            }
+            
+            .language-toggle {
+                padding: 6px 12px;
+                font-size: 0.9rem;
+            }
+            
+            .page-title {
+                font-size: 1.5rem;
+            }
+            
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .function-button {
+                padding: 15px;
+            }
+            
+            .nav-label {
+                font-size: 0.75rem;
+            }
+        }
+        
+        @media (min-width: 768px) {
+            .grid-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .nav-button {
+                max-width: 150px;
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .grid-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .contact-card {
+                max-width: 600px;
+            }
+        }
+        
+        /* 滑動手勢指示器 */
+        .swipe-hint {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .swipe-hint {
+                display: block;
+            }
+        }
+        
+        /* 動畫效果 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <!-- 頂部標題欄 -->
+    <header>
+        <div class="logo-container">
+            <h1 class="main-title" data-lang-key="mainTitle">乒乓球隊管理系統</h1>
+            <p class="subtitle" data-lang-key="subtitle">專業球隊管理與教學支援平台</p>
+        </div>
+        <button id="languageToggle" class="language-toggle">
+            <i class="fas fa-globe"></i>
+            <span id="languageText">EN</span>
+        </button>
+    </header>
+    
+    <!-- 內容區域 -->
+    <div class="content-container">
+        <div class="background-image"></div>
+        
+        <div class="pages-container">
+            <!-- 公告欄頁面 -->
+            <div id="announcements" class="page active">
+                <h2 class="page-title" data-lang-key="announcements">公告欄</h2>
+                <div class="announcement-content fade-in">
+                    <div class="announcement-placeholder" data-lang-key="noAnnouncements">
+                        暫無公告
+                    </div>
+                    <!-- 【用戶可自定義 - 公告內容】 -->
+                    <!-- 在此處添加實際公告內容 -->
+                </div>
+                <div class="swipe-hint" data-lang-key="swipeHint">左右滑動切換頁面</div>
+            </div>
+            
+            <!-- 行政支援頁面 -->
+            <div id="admin" class="page">
+                <h2 class="page-title" data-lang-key="adminSupport">行政支援</h2>
+                <div class="grid-container">
+                    <!-- 【用戶可自定義 - 功能按鈕】 -->
+                    <a href="https://sites.google.com" target="_blank" class="function-button admin-button">
+                        <div class="button-icon">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <div class="button-title" data-lang-key="classReminder">課堂提醒系統</div>
+                        <div class="button-description" data-lang-key="classReminderDesc">設定訓練和比賽提醒</div>
+                    </a>
+                    
+                    <a href="#" class="function-button admin-button">
+                        <div class="button-icon">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="button-title" data-lang-key="schedule">訓練日程安排</div>
+                        <div class="button-description" data-lang-key="scheduleDesc">查看和安排訓練時間</div>
+                    </a>
+                    
+                    <a href="#" class="function-button admin-button">
+                        <div class="button-icon">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                        </div>
+                        <div class="button-title" data-lang-key="feeManagement">費用管理</div>
+                        <div class="button-description" data-lang-key="feeManagementDesc">管理球隊費用和繳費記錄</div>
+                    </a>
+                    
+                    <a href="#" class="function-button admin-button">
+                        <div class="button-icon">
+                            <i class="fas fa-tshirt"></i>
+                        </div>
+                        <div class="button-title" data-lang-key="equipment">器材管理</div>
+                        <div class="button-description" data-lang-key="equipmentDesc">球隊器材借用與歸還</div>
+                    </a>
+                </div>
+                <div class="swipe-hint" data-lang-key="swipeHint">左右滑動切換頁面</div>
+            </div>
+            
+            <!-- 教學支援頁面 -->
+            <div id="teaching" class="page">
+                <h2 class="page-title" data-lang-key="teachingSupport">教學支援</h2>
+                <div class="grid-container">
+                    <!-- 【用戶可自定義 - 所有按鈕連結和描述】 -->
+                    <a href="#" class="function-button attendance-button">
+                        <div class="button-icon">
+                            <i class="fas fa-clipboard-check"></i>
+                        </div>
+                        <div class="button-title" data-lang-key="attendance">點名系統</div>
+                        <div class="button-description" data-lang-key="attendanceDesc">記錄學生出席情況</div>
+                    </a>
+                    
+                    <a href="#" class="function-button attendance-button">
+                        <div class="button-icon">
+                            <i class="fas fa-sign-in-alt"></i>
+                        </div>
+                        <div class="button-title" data-lang-key="checkIn">簽到系統</div>
+                        <div class="button-description" data-lang-key="checkInDesc">學生訓練簽到記錄</div>
+                    </a>
+                    
+                    <a href="#" class="function-button attendance-button">
+                        <div class="button-icon">
+                            <i class="fas fa-user-clock"></i>
+                        </div>
+                        <div class="button-title" data-lang-key="leaveRequest">請假系統</div>
+                        <div class="button-description" data-lang-key="leaveRequestDesc">提交和審批請假申請</div>
+                    </a>
+                    
+                    <a href="#" class="function-button attendance-button">
+                        <div class="button-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="button-title" data-lang-key="lateNotice">遲到通知系統</div>
+                        <div class="button-description" data-lang-key="lateNoticeDesc">記錄和通知遲到情況</div>
+                    </a>
+                </div>
+                <div class="swipe-hint" data-lang-key="swipeHint">左右滑動切換頁面</div>
+            </div>
+            
+            <!-- 聯絡我們頁面 -->
+            <div id="contact" class="page">
+                <h2 class="page-title" data-lang-key="contactUs">聯絡我們</h2>
+                <div class="contact-card fade-in">
+                    <div class="contact-info">
+                        <!-- 【用戶可自定義 - 聯絡資訊】 -->
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div class="contact-details">
+                                <h3 data-lang-key="phone">電話號碼</h3>
+                                <p>+886 912 345 678</p>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="contact-details">
+                                <h3 data-lang-key="email">電子郵件</h3>
+                                <p>coach@pingpongteam.tw</p>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="contact-details">
+                                <h3 data-lang-key="officeHours">辦公時間</h3>
+                                <p data-lang-key="hoursDetail">週一至週五：09:00-18:00<br>週六：10:00-16:00</p>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="contact-details">
+                                <h3 data-lang-key="location">訓練地點</h3>
+                                <p data-lang-key="locationDetail">台北市中山區體育館三樓乒乓球室</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="swipe-hint" data-lang-key="swipeHint">左右滑動切換頁面</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 底部導航欄 -->
+    <footer>
+        <div class="nav-button active" data-page="announcements">
+            <div class="nav-icon">
+                <i class="fas fa-bullhorn"></i>
+            </div>
+            <div class="nav-label" data-lang-key="announcements">公告</div>
+        </div>
+        
+        <div class="nav-button" data-page="admin">
+            <div class="nav-icon">
+                <i class="fas fa-cogs"></i>
+            </div>
+            <div class="nav-label" data-lang-key="adminSupport">行政支援</div>
+        </div>
+        
+        <div class="nav-button" data-page="teaching">
+            <div class="nav-icon">
+                <i class="fas fa-chalkboard-teacher"></i>
+            </div>
+            <div class="nav-label" data-lang-key="teachingSupport">教學支援</div>
+        </div>
+        
+        <div class="nav-button" data-page="contact">
+            <div class="nav-icon">
+                <i class="fas fa-address-card"></i>
+            </div>
+            <div class="nav-label" data-lang-key="contactUs">聯絡我們</div>
+        </div>
+    </footer>
+
+    <script>
+        // 【用戶可自定義 - 翻譯內容】
+        // 完整的翻譯對象，包含所有界面文本
+        const translations = {
+            'zh-TW': {
+                // 標題和副標題
+                'mainTitle': '乒乓球隊管理系統',
+                'subtitle': '專業球隊管理與教學支援平台',
+                
+                // 頁面標題
+                'announcements': '公告欄',
+                'adminSupport': '行政支援',
+                'teachingSupport': '教學支援',
+                'contactUs': '聯絡我們',
+                
+                // 公告頁面
+                'noAnnouncements': '暫無公告',
+                
+                // 行政支援按鈕
+                'classReminder': '課堂提醒系統',
+                'classReminderDesc': '設定訓練和比賽提醒',
+                'schedule': '訓練日程安排',
+                'scheduleDesc': '查看和安排訓練時間',
+                'feeManagement': '費用管理',
+                'feeManagementDesc': '管理球隊費用和繳費記錄',
+                'equipment': '器材管理',
+                'equipmentDesc': '球隊器材借用與歸還',
+                
+                // 教學支援按鈕
+                'attendance': '點名系統',
+                'attendanceDesc': '記錄學生出席情況',
+                'checkIn': '簽到系統',
+                'checkInDesc': '學生訓練簽到記錄',
+                'leaveRequest': '請假系統',
+                'leaveRequestDesc': '提交和審批請假申請',
+                'lateNotice': '遲到通知系統',
+                'lateNoticeDesc': '記錄和通知遲到情況',
+                
+                // 聯絡資訊
+                'phone': '電話號碼',
+                'email': '電子郵件',
+                'officeHours': '辦公時間',
+                'hoursDetail': '週一至週五：09:00-18:00<br>週六：10:00-16:00',
+                'location': '訓練地點',
+                'locationDetail': '台北市中山區體育館三樓乒乓球室',
+                
+                // 導航標籤
+                'announcementsNav': '公告',
+                'adminSupportNav': '行政支援',
+                'teachingSupportNav': '教學支援',
+                'contactUsNav': '聯絡我們',
+                
+                // 其他
+                'swipeHint': '左右滑動切換頁面',
+                'languageToggle': '切換語言'
+            },
+            'en': {
+                // 標題和副標題
+                'mainTitle': 'Table Tennis Team Management System',
+                'subtitle': 'Professional team management and teaching support platform',
+                
+                // 頁面標題
+                'announcements': 'Announcements',
+                'adminSupport': 'Administrative Support',
+                'teachingSupport': 'Teaching Support',
+                'contactUs': 'Contact Us',
+                
+                // 公告頁面
+                'noAnnouncements': 'No announcements currently',
+                
+                // 行政支援按鈕
+                'classReminder': 'Class Reminder System',
+                'classReminderDesc': 'Set training and match reminders',
+                'schedule': 'Training Schedule',
+                'scheduleDesc': 'View and arrange training times',
+                'feeManagement': 'Fee Management',
+                'feeManagementDesc': 'Manage team fees and payment records',
+                'equipment': 'Equipment Management',
+                'equipmentDesc': 'Team equipment borrowing and return',
+                
+                // 教學支援按鈕
+                'attendance': 'Attendance System',
+                'attendanceDesc': 'Record student attendance',
+                'checkIn': 'Check-in System',
+                'checkInDesc': 'Student training check-in records',
+                'leaveRequest': 'Leave Request System',
+                'leaveRequestDesc': 'Submit and approve leave applications',
+                'lateNotice': 'Late Notice System',
+                'lateNoticeDesc': 'Record and notify late arrivals',
+                
+                // 聯絡資訊
+                'phone': 'Phone Number',
+                'email': 'Email',
+                'officeHours': 'Office Hours',
+                'hoursDetail': 'Monday-Friday: 09:00-18:00<br>Saturday: 10:00-16:00',
+                'location': 'Training Location',
+                'locationDetail': 'Table Tennis Room, 3rd Floor, Zhongshan Sports Center, Taipei',
+                
+                // 導航標籤
+                'announcementsNav': 'Announcements',
+                'adminSupportNav': 'Admin Support',
+                'teachingSupportNav': 'Teaching Support',
+                'contactUsNav': 'Contact',
+                
+                // 其他
+                'swipeHint': 'Swipe left/right to switch pages',
+                'languageToggle': 'Toggle Language'
+            }
+        };
+
+        // 系統狀態
+        let currentLanguage = 'zh-TW';
+        let currentPage = 'announcements';
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        // DOM元素
+        const pages = {
+            announcements: document.getElementById('announcements'),
+            admin: document.getElementById('admin'),
+            teaching: document.getElementById('teaching'),
+            contact: document.getElementById('contact')
+        };
+        
+        const navButtons = document.querySelectorAll('.nav-button');
+        const languageToggle = document.getElementById('languageToggle');
+        const languageText = document.getElementById('languageText');
+
+        // 初始化函數
+        function init() {
+            // 檢測瀏覽器語言
+            const browserLang = navigator.language || navigator.userLanguage;
+            const savedLang = localStorage.getItem('pingpongLang');
+            
+            // 設定語言
+            if (savedLang && (savedLang === 'zh-TW' || savedLang === 'en')) {
+                currentLanguage = savedLang;
+            } else if (browserLang.startsWith('zh')) {
+                currentLanguage = 'zh-TW';
+            } else {
+                currentLanguage = 'en';
+            }
+            
+            updateLanguage();
+            
+            // 設定事件監聽器
+            setupEventListeners();
+            
+            // 設定當前頁面
+            changePage(currentPage);
+        }
+
+        // 設定事件監聽器
+        function setupEventListeners() {
+            // 導航按鈕點擊
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const page = button.getAttribute('data-page');
+                    changePage(page);
+                });
+            });
+            
+            // 語言切換
+            languageToggle.addEventListener('click', toggleLanguage);
+            
+            // 滑動手勢檢測
+            document.addEventListener('touchstart', e => {
+                touchStartX = e.changedTouches[0].screenX;
+            }, {passive: true});
+            
+            document.addEventListener('touchend', e => {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe();
+            }, {passive: true});
+            
+            // 按鈕懸停效果（桌面設備）
+            document.querySelectorAll('.function-button').forEach(button => {
+                button.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px)';
+                });
+                
+                button.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+        }
+
+        // 切換頁面
+        function changePage(pageId) {
+            // 隱藏所有頁面
+            Object.values(pages).forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // 顯示目標頁面
+            pages[pageId].classList.add('active');
+            
+            // 更新導航按鈕狀態
+            navButtons.forEach(button => {
+                if (button.getAttribute('data-page') === pageId) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+            
+            // 更新當前頁面
+            currentPage = pageId;
+            
+            // 添加淡入效果
+            const activePage = pages[pageId];
+            const content = activePage.querySelector('.announcement-content, .contact-card, .grid-container');
+            if (content) {
+                content.classList.remove('fade-in');
+                void content.offsetWidth; // 觸發重排以重置動畫
+                content.classList.add('fade-in');
+            }
+        }
+
+        // 處理滑動手勢
+        function handleSwipe() {
+            const swipeThreshold = 50; // 最小滑動距離
+            const swipeDistance = touchEndX - touchStartX;
+            
+            // 向左滑動（下一頁）
+            if (swipeDistance < -swipeThreshold) {
+                navigateNext();
+            }
+            
+            // 向右滑動（上一頁）
+            if (swipeDistance > swipeThreshold) {
+                navigatePrev();
+            }
+        }
+
+        // 導航到下一個頁面
+        function navigateNext() {
+            const pageOrder = ['announcements', 'admin', 'teaching', 'contact'];
+            const currentIndex = pageOrder.indexOf(currentPage);
+            const nextIndex = (currentIndex + 1) % pageOrder.length;
+            changePage(pageOrder[nextIndex]);
+        }
+
+        // 導航到上一個頁面
+        function navigatePrev() {
+            const pageOrder = ['announcements', 'admin', 'teaching', 'contact'];
+            const currentIndex = pageOrder.indexOf(currentPage);
+            const prevIndex = (currentIndex - 1 + pageOrder.length) % pageOrder.length;
+            changePage(pageOrder[prevIndex]);
+        }
+
+        // 切換語言
+        function toggleLanguage() {
+            currentLanguage = currentLanguage === 'zh-TW' ? 'en' : 'zh-TW';
+            localStorage.setItem('pingpongLang', currentLanguage);
+            updateLanguage();
+        }
+
+        // 更新界面語言
+        function updateLanguage() {
+            // 更新所有帶有 data-lang-key 屬性的元素
+            document.querySelectorAll('[data-lang-key]').forEach(element => {
+                const key = element.getAttribute('data-lang-key');
+                if (translations[currentLanguage][key]) {
+                    if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+                        element.placeholder = translations[currentLanguage][key];
+                    } else {
+                        element.innerHTML = translations[currentLanguage][key];
+                    }
+                }
+            });
+            
+            // 更新語言切換按鈕文本
+            languageText.textContent = currentLanguage === 'zh-TW' ? 'EN' : '中文';
+            
+            // 更新頁面標題
+            document.title = currentLanguage === 'zh-TW' 
+                ? '乒乓球隊管理系統' 
+                : 'Table Tennis Team Management System';
+        }
+
+        // 初始化應用
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
